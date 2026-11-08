@@ -61,15 +61,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.9.7
-          name: Coin Push Radar v1.9.7
+          tag_name: v1.9.8
+          name: Coin Push Radar v1.9.8
           body: |
-            ### 🚀 Coin Push Radar v1.9.7 (Unrestricted Full Rebuild)
-            - **Activate All Alerts 🔓:** Follow unlimited coins with the global Activate All switch fully unlocked (3-coin paywall removed).
-            - **Live Real-Time Charts:** Expandable 1-second candles and multi-timeframe charts (1s, 1m, 5m, 15m, 1h, 4h, 1d) with zero subscriptions.
-            - **Breakout & Momentum Alerts:** Real-time push stream for Going Up, Break Up, and Imminent Movement signals.
-            - **5 Complete Tabs:** Coins, Movers (Gainers & Losers), News, Alerts, and Settings.
-            - **Dark Mode & No Ads:** High performance dark OLED theme without advertisements.
+            ### 🚀 Coin Push Radar v1.9.8 (Bybit Linear Perpetual Upgrade)
+            - **Bybit Linear Futures (v5 API):** 829+ live USDT linear pairs including all popular meme coins (1000PEPE, 1000BONK, WIF, POPCAT, GOAT, ACT, PNUT, MOODENG, HYPE, SUI, DOGE).
+            - **In-App Interactive Candlestick Charts (Zero Redirects):** Live TradingView Bybit candlestick charts with 1s, 1m, 5m, 15m, 1h, 4h, 1d timeframes fully embedded inside the app.
+            - **On-Screen Popups & Heads-Up Alerts:** Instant visual alert card sliding down when breakout momentum triggers, plus Android system heads-up notifications with sound and vibration.
+            - **Settings Test Alert Button:** Test notification delivery and on-screen popups with 1 tap.
+            - **100% Unrestricted VIP:** Master Activate All toggle active for all 829+ pairs, no 3-coin cap, and zero ads.
           files: output/CoinPushRadar.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

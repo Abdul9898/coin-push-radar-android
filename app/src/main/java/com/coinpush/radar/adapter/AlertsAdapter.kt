@@ -1,20 +1,18 @@
 package com.coinpush.radar.adapter
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.coinpush.radar.R
 import com.coinpush.radar.databinding.ItemAlertRowBinding
-import com.coinpush.radar.engine.BinanceFeedEngine
+import com.coinpush.radar.engine.BybitFeedEngine
 import com.coinpush.radar.model.AlertSignalItem
 
 class AlertsAdapter(
     private val context: Context,
-    private var alerts: MutableList<AlertSignalItem>
+    private var alerts: MutableList<AlertSignalItem>,
+    private val onAlertClick: (AlertSignalItem) -> Unit
 ) : RecyclerView.Adapter<AlertsAdapter.AlertViewHolder>() {
 
     fun updateList(newList: List<AlertSignalItem>) {
@@ -45,7 +43,7 @@ class AlertsAdapter(
             binding.symbolTitleTxt.text = item.symbol
             binding.alertTypeTxt.text = item.alertType
             binding.fifteenMinTxt.text = item.description
-            binding.alertPriceTxt.text = "$${BinanceFeedEngine.formatPrice(item.price)}"
+            binding.alertPriceTxt.text = "$${BybitFeedEngine.formatPrice(item.price)}"
 
             val timeDiffMinutes = (System.currentTimeMillis() - item.timestamp) / 60000
             binding.alertTimeTxt.text = if (timeDiffMinutes <= 1) "Just now" else "${timeDiffMinutes}m ago"
@@ -68,15 +66,9 @@ class AlertsAdapter(
                 binding.alertTypeTxt.setTextColor(context.getColor(R.color.title_color))
             }
 
+            // In-app inspection only — zero external redirects!
             binding.root.setOnClickListener {
-                try {
-                    val base = item.symbol.removeSuffix("USDT")
-                    val url = "https://www.binance.com/en/trade/${base}_USDT"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "${item.symbol}: ${item.alertType}", Toast.LENGTH_SHORT).show()
-                }
+                onAlertClick(item)
             }
         }
     }

@@ -1,9 +1,7 @@
 package com.coinpush.radar.adapter
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,12 +11,14 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.coinpush.radar.R
 import com.coinpush.radar.databinding.ItemCoinPushRowBinding
-import com.coinpush.radar.engine.BinanceFeedEngine
+import com.coinpush.radar.engine.BybitFeedEngine
 import com.coinpush.radar.model.CoinPushItem
+import com.coinpush.radar.ui.CoinDetailBottomSheet
 import java.util.Locale
 
 class CoinPushAdapter(
@@ -68,7 +68,7 @@ class CoinPushAdapter(
         fun bind(item: CoinPushItem) {
             binding.symbolTitle.text = item.baseAsset
             binding.symbolName.text = item.name
-            binding.price.text = BinanceFeedEngine.formatPrice(item.price)
+            binding.price.text = BybitFeedEngine.formatPrice(item.price)
 
             // Price change percentage badge
             val isPositive = item.priceChangePercent >= 0.0
@@ -131,20 +131,27 @@ class CoinPushAdapter(
                 binding.clWebview.visibility = View.GONE
             }
 
-            // Toggle Expand / Collapse when clicking header
+            // Toggle Expand / Collapse when clicking header (Stay in app!)
             binding.clHeader.setOnClickListener {
                 item.isChartExpanded = !item.isChartExpanded
                 notifyItemChanged(adapterPosition)
             }
 
-            // Trade on Binance
+            // In-App Inspect Full Chart / Sheet (NO external redirect!)
+            binding.btnTradeBinance.text = "Inspect Chart"
             binding.btnTradeBinance.setOnClickListener {
-                try {
-                    val url = "https://www.binance.com/en/trade/${item.baseAsset}_USDT"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Opening Binance trade pair...", Toast.LENGTH_SHORT).show()
+                if (context is AppCompatActivity) {
+                    val sheet = CoinDetailBottomSheet.newInstance(
+                        symbol = item.symbol,
+                        baseAsset = item.baseAsset,
+                        name = item.name,
+                        price = item.price,
+                        change = item.priceChangePercent,
+                        high = item.highPrice,
+                        low = item.lowPrice,
+                        turnover = item.quoteVolume
+                    )
+                    sheet.show(context.supportFragmentManager, "CoinDetailSheet")
                 }
             }
         }
@@ -168,12 +175,24 @@ class CoinPushAdapter(
             webView.setBackgroundColor(Color.BLACK)
             webView.webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                    return false
+                    return false // Stay inside WebView
                 }
             }
 
-            val pairLower = item.symbol.lowercase(Locale.ROOT)
-            val chartUrl = "https://api.coinpush.app/chart/realtime.html?symbol=$pairLower&interval=${item.selectedInterval}"
+            loadChartForInterval(webView, item, item.selectedInterval)
+        }
+
+        private fun loadChartForInterval(webView: WebView, item: CoinPushItem, interval: String) {
+            val tvInterval = when (interval) {
+                "1s", "1m" -> "1"
+                "5m" -> "5"
+                "15m" -> "15"
+                "1h" -> "60"
+                "4h" -> "240"
+                "1d" -> "D"
+                else -> "15"
+            }
+            val chartUrl = "https://s.tradingview.com/widgetembed/?symbol=BYBIT%3A${item.symbol}.P&interval=$tvInterval&theme=dark&style=1&timezone=exchange&hide_top_toolbar=0&withdateranges=1&hide_side_toolbar=1&allow_symbol_change=0"
             webView.loadUrl(chartUrl)
         }
 
@@ -193,9 +212,7 @@ class CoinPushAdapter(
                 tv.setOnClickListener {
                     item.selectedInterval = key
                     setupIntervalChips(item)
-                    val pairLower = item.symbol.lowercase(Locale.ROOT)
-                    val chartUrl = "https://api.coinpush.app/chart/realtime.html?symbol=$pairLower&interval=$key"
-                    binding.webView.loadUrl(chartUrl)
+                    loadChartForInterval(binding.webView, item, key)
                 }
             }
         }

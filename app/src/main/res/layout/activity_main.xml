@@ -132,7 +132,89 @@
         android:background="@color/line_color"
         app:layout_constraintTop_toBottomOf="@id/top_bar" />
 
-    <!-- TAB 1: COINS (All Symbols) -->
+    <!-- In-App Floating Alert Banner (Pops on screen when breakout happens!) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_alert_popup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#131924"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="20dp"
+        app:layout_constraintTop_toBottomOf="@id/top_divider">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+            <ImageView
+                android:id="@+id/iv_popup_icon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/going_up"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_popup_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="sans-serif-black"
+                android:text="🚀 PEPE Going up!"
+                android:textColor="@color/title_color"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@id/iv_popup_close"
+                app:layout_constraintStart_toEndOf="@id/iv_popup_icon"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_popup_desc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="sans-serif"
+                android:text="Price: $0.000021 • +8.5% Surge (1h Momentum)"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                app:layout_constraintEnd_toStartOf="@id/btn_popup_view"
+                app:layout_constraintStart_toEndOf="@id/iv_popup_icon"
+                app:layout_constraintTop_toBottomOf="@id/tv_popup_title" />
+
+            <TextView
+                android:id="@+id/btn_popup_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill_gold"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="Chart"
+                android:textColor="@color/title_color"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/iv_popup_close"
+                app:layout_constraintTop_toBottomOf="@id/tv_popup_title" />
+
+            <ImageView
+                android:id="@+id/iv_popup_close"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:padding="4dp"
+                android:src="@drawable/close"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- TAB 1: COINS (All Bybit Symbols) -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/container_coins"
         android:layout_width="match_parent"
@@ -220,7 +302,7 @@
                 android:paddingBottom="12dp" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <!-- Loading / Empty indicator -->
+        <!-- Loading indicator -->
         <ProgressBar
             android:id="@+id/pb_coins"
             android:layout_width="40dp"
@@ -454,7 +536,7 @@
                     android:layout_marginTop="6dp"
                     android:fontFamily="sans-serif"
                     android:lineSpacingExtra="3dp"
-                    android:text="• Unlimited Coin Follows (3-coin limit removed)\n• Master Activate All Alerts unlocked\n• Real-Time 1s/1m/15m/1h Candlestick Charts\n• Full Breakout Momentum Radar"
+                    android:text="• Unlimited Coin Follows (3-coin limit removed)\n• Master Activate All Alerts unlocked\n• Real-Time 1s/1m/15m/1h Candlestick Charts\n• Bybit Linear Perpetual 820+ Pairs &amp; Meme Coins\n• Live On-Screen Popups &amp; System Heads-Up Alerts"
                     android:textColor="@color/passive_gray"
                     android:textSize="12sp"
                     app:layout_constraintTop_toBottomOf="@id/tv_settings_vip_title" />
@@ -472,6 +554,19 @@
                     android:textStyle="bold"
                     app:layout_constraintTop_toBottomOf="@id/tv_settings_vip_desc" />
             </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Test Alert Trigger Button (Guarantees user can test notifications!) -->
+            <Button
+                android:id="@+id/btn_test_notification"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_pill_gold"
+                android:fontFamily="sans-serif-medium"
+                android:text="🔔 Test Alert Notification (Pop on Screen)"
+                android:textColor="@color/title_color"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
             <!-- Alert Configuration Card -->
             <LinearLayout
@@ -603,7 +698,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Data Feed: Binance High-Speed API &amp; WebSockets"
+                    android:text="Data Feed: Bybit Linear Perpetual Futures (v5 API)"
                     android:textColor="@color/passive_gray"
                     android:textSize="12sp" />
 
@@ -611,7 +706,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Pairs Tracked: 770+ USDT Pairs"
+                    android:text="Pairs Tracked: 829+ USDT Linear Pairs (All Meme Coins)"
                     android:textColor="@color/passive_gray"
                     android:textSize="12sp" />
             </LinearLayout>

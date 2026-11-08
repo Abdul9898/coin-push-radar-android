@@ -1,6 +1,9 @@
 package com.coinpush.radar
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -8,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,10 +20,12 @@ import com.coinpush.radar.adapter.CoinPushAdapter
 import com.coinpush.radar.adapter.MoversAdapter
 import com.coinpush.radar.adapter.NewsAdapter
 import com.coinpush.radar.databinding.ActivityMainBinding
-import com.coinpush.radar.engine.BinanceFeedEngine
+import com.coinpush.radar.engine.AlertNotificationManager
+import com.coinpush.radar.engine.BybitFeedEngine
 import com.coinpush.radar.model.AlertSignalItem
 import com.coinpush.radar.model.CoinPushItem
 import com.coinpush.radar.model.MoverItem
+import com.coinpush.radar.ui.CoinDetailBottomSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -46,11 +52,20 @@ class MainActivity : AppCompatActivity() {
     private var isGainersSelected = true
     private var isAllAlertsActive = true
     private var refreshJob: Job? = null
+    private var popupDismissJob: Job? = null
+
+    companion object {
+        private const val REQ_NOTIF_PERMISSION = 101
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Initialize high-priority notification channel
+        AlertNotificationManager.initNotificationChannel(this)
+        requestNotificationPermission()
 
         val prefs = getSharedPreferences("coin_push_radar_settings", Context.MODE_PRIVATE)
         isAllAlertsActive = prefs.getBoolean("all_alerts_active", true)
@@ -60,8 +75,26 @@ class MainActivity : AppCompatActivity() {
         setupTopBar()
         setupMoversSubTabs()
         setupAlertFilterChips()
+        setupSettingsControls()
         loadInitialData()
         startLiveRefreshLoop()
+
+        // If launched via notification intent
+        intent?.getStringExtra("selected_symbol")?.let { sym ->
+            openCoinDetail(sym)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQ_NOTIF_PERMISSION
+                )
+            }
+        }
     }
 
     private fun setupRecyclerViews() {
@@ -74,22 +107,27 @@ class MainActivity : AppCompatActivity() {
             adapter = coinsAdapter
         }
 
-        // 2. Movers RecyclerView
-        moversAdapter = MoversAdapter(this, mutableListOf())
+        // 2. Movers RecyclerView (In-app chart bottom sheet, NO external redirect)
+        moversAdapter = MoversAdapter(this, mutableListOf()) { mover ->
+            val sym = if (mover.symbol.endsWith("USDT")) mover.symbol else "${mover.symbol}USDT"
+            openCoinDetail(sym)
+        }
         binding.moversRV.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = moversAdapter
         }
 
         // 3. News RecyclerView
-        newsAdapter = NewsAdapter(this, BinanceFeedEngine.getNewsFeed().toMutableList())
+        newsAdapter = NewsAdapter(this, BybitFeedEngine.getNewsFeed().toMutableList())
         binding.newsRV.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = newsAdapter
         }
 
-        // 4. Alerts RecyclerView
-        alertsAdapter = AlertsAdapter(this, mutableListOf())
+        // 4. Alerts RecyclerView (In-app chart bottom sheet, NO external redirect)
+        alertsAdapter = AlertsAdapter(this, mutableListOf()) { alert ->
+            openCoinDetail(alert.symbol)
+        }
         binding.alertsRV.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = alertsAdapter
@@ -99,8 +137,87 @@ class MainActivity : AppCompatActivity() {
         binding.swipeCoins.setOnRefreshListener { refreshMarketData() }
         binding.swipeMovers.setOnRefreshListener { refreshMarketData() }
         binding.swipeNews.setOnRefreshListener {
-            newsAdapter.updateList(BinanceFeedEngine.getNewsFeed())
+            newsAdapter.updateList(BybitFeedEngine.getNewsFeed())
             binding.swipeNews.isRefreshing = false
+        }
+    }
+
+    fun openCoinDetail(symbol: String) {
+        val coin = allCoinsList.find { it.symbol.equals(symbol, ignoreCase = true) }
+        val sheet = if (coin != null) {
+            CoinDetailBottomSheet.newInstance(
+                symbol = coin.symbol,
+                baseAsset = coin.baseAsset,
+                name = coin.name,
+                price = coin.price,
+                change = coin.priceChangePercent,
+                high = coin.highPrice,
+                low = coin.lowPrice,
+                turnover = coin.quoteVolume
+            )
+        } else {
+            val base = symbol.removeSuffix("USDT")
+            CoinDetailBottomSheet.newInstance(
+                symbol = symbol,
+                baseAsset = base,
+                name = base,
+                price = 0.0,
+                change = 0.0,
+                high = 0.0,
+                low = 0.0,
+                turnover = 0.0
+            )
+        }
+        sheet.show(supportFragmentManager, "CoinDetailSheet")
+    }
+
+    private fun showOnScreenAlert(coin: CoinPushItem) {
+        runOnUiThread {
+            binding.tvPopupTitle.text = "🚀 ${coin.baseAsset} ${coin.alertType}"
+            val priceStr = BybitFeedEngine.formatPrice(coin.price)
+            val prefix = if (coin.priceChangePercent >= 0) "+" else ""
+            val changeStr = "$prefix${String.format(Locale.US, "%.2f", coin.priceChangePercent)}%"
+            binding.tvPopupDesc.text = "Price: $$priceStr • 24h: $changeStr • Bybit Linear"
+
+            when (coin.alertType) {
+                "Breaks up!" -> binding.ivPopupIcon.setImageResource(R.drawable.break_up)
+                "Going up!" -> binding.ivPopupIcon.setImageResource(R.drawable.going_up)
+                "Imminent movement!" -> binding.ivPopupIcon.setImageResource(R.drawable.squeeze)
+                "Breaks down!" -> binding.ivPopupIcon.setImageResource(R.drawable.break_down)
+                else -> binding.ivPopupIcon.setImageResource(R.drawable.going_up)
+            }
+
+            binding.btnPopupView.setOnClickListener {
+                binding.cardAlertPopup.visibility = View.GONE
+                openCoinDetail(coin.symbol)
+            }
+
+            binding.ivPopupClose.setOnClickListener {
+                binding.cardAlertPopup.visibility = View.GONE
+            }
+
+            binding.cardAlertPopup.visibility = View.VISIBLE
+            binding.cardAlertPopup.alpha = 0f
+            binding.cardAlertPopup.translationY = -40f
+            binding.cardAlertPopup.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .start()
+
+            // Auto-dismiss after 6 seconds
+            popupDismissJob?.cancel()
+            popupDismissJob = lifecycleScope.launch {
+                delay(6000)
+                if (binding.cardAlertPopup.visibility == View.VISIBLE) {
+                    binding.cardAlertPopup.animate()
+                        .alpha(0f)
+                        .translationY(-40f)
+                        .setDuration(300)
+                        .withEndAction { binding.cardAlertPopup.visibility = View.GONE }
+                        .start()
+                }
+            }
         }
     }
 
@@ -125,7 +242,7 @@ class MainActivity : AppCompatActivity() {
             coinsAdapter.notifyDataSetChanged()
 
             val statusMsg = if (isAllAlertsActive) {
-                "🔓 All 770+ coin alerts activated! (Unrestricted VIP)"
+                "🔓 All 829+ Bybit coin alerts activated! (Unrestricted VIP)"
             } else {
                 "All alerts deactivated"
             }
@@ -136,7 +253,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvVipBadge.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Coin Push Radar VIP 🔓")
-                .setMessage("VIP status is permanently unlocked:\n\n• Unlimited coin alerts (3-coin limit removed)\n• Master Activate All toggle active\n• Live 1s / 1m / 15m / 1h candlestick charts\n• Zero subscription fees forever!")
+                .setMessage("VIP status is permanently unlocked:\n\n• Unlimited Bybit Linear Perpetual coins (829+ pairs)\n• Master Activate All toggle active\n• Live 1s / 1m / 15m / 1h candlestick charts\n• On-Screen Popups & Heads-Up Alerts enabled\n• Zero subscription fees forever!")
                 .setPositiveButton("OK", null)
                 .show()
         }
@@ -168,6 +285,47 @@ class MainActivity : AppCompatActivity() {
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    private fun setupSettingsControls() {
+        // Test Alert Notification button
+        binding.btnTestNotification.setOnClickListener {
+            requestNotificationPermission()
+
+            val testCoin = allCoinsList.firstOrNull { it.alertType.isNotEmpty() }
+                ?: CoinPushItem(
+                    symbol = "1000PEPEUSDT",
+                    baseAsset = "1000PEPE",
+                    name = "Pepe",
+                    price = 0.0000213,
+                    priceChangePercent = 8.45,
+                    alertType = "Going up!"
+                )
+
+            val priceStr = BybitFeedEngine.formatPrice(testCoin.price)
+            val prefix = if (testCoin.priceChangePercent >= 0) "+" else ""
+            val changeStr = "$prefix${String.format(Locale.US, "%.2f", testCoin.priceChangePercent)}%"
+
+            // 1. Post system heads-up notification with sound and vibration
+            val posted = AlertNotificationManager.triggerAlertNotification(
+                context = this,
+                symbol = testCoin.symbol,
+                alertType = testCoin.alertType,
+                priceFormatted = priceStr,
+                changeFormatted = changeStr,
+                isTest = true
+            )
+
+            // 2. Trigger in-app on-screen pop-up banner
+            showOnScreenAlert(testCoin)
+
+            val feedback = if (posted) {
+                "🔔 Alert notification popped on screen & status bar!"
+            } else {
+                "Alert popup shown! (Enable notifications in system settings if status bar icon is hidden)"
+            }
+            Toast.makeText(this, feedback, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun updateActivateAllUi() {
@@ -310,7 +468,7 @@ class MainActivity : AppCompatActivity() {
     private fun refreshMarketData() {
         lifecycleScope.launch {
             try {
-                val coins = BinanceFeedEngine.fetchMarketTickers()
+                val coins = BybitFeedEngine.fetchMarketTickers()
                 if (coins.isNotEmpty()) {
                     allCoinsList.clear()
                     allCoinsList.addAll(coins)
@@ -321,9 +479,9 @@ class MainActivity : AppCompatActivity() {
 
                     // Update Movers
                     gainersList.clear()
-                    gainersList.addAll(BinanceFeedEngine.extractGainers(coins))
+                    gainersList.addAll(BybitFeedEngine.extractGainers(coins))
                     losersList.clear()
-                    losersList.addAll(BinanceFeedEngine.extractLosers(coins))
+                    losersList.addAll(BybitFeedEngine.extractLosers(coins))
 
                     if (isGainersSelected) {
                         moversAdapter.updateList(gainersList)
@@ -332,10 +490,13 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     // Update Alerts
-                    val extractedAlerts = BinanceFeedEngine.extractAlertSignals(coins)
+                    val extractedAlerts = BybitFeedEngine.extractAlertSignals(coins)
                     allAlertsList.clear()
                     allAlertsList.addAll(extractedAlerts)
                     alertsAdapter.updateList(allAlertsList)
+
+                    // Check for active alerts on subscribed coins to fire heads-up notifications & popups
+                    checkForActiveAlerts(coins)
                 }
             } catch (e: Exception) {
                 // Ignore transient network errors
@@ -347,13 +508,41 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkForActiveAlerts(coins: List<CoinPushItem>) {
+        val subsPrefs = getSharedPreferences("coin_push_subs", Context.MODE_PRIVATE)
+        val alertCoins = coins.filter { it.alertType.isNotEmpty() }
+
+        for (coin in alertCoins) {
+            val isSubscribed = subsPrefs.getBoolean("sub_${coin.symbol}", isAllAlertsActive)
+            if (isSubscribed) {
+                val priceStr = BybitFeedEngine.formatPrice(coin.price)
+                val prefix = if (coin.priceChangePercent >= 0) "+" else ""
+                val changeStr = "$prefix${String.format(Locale.US, "%.2f", coin.priceChangePercent)}%"
+
+                // Trigger system heads-up notification (subject to cooldown)
+                val triggered = AlertNotificationManager.triggerAlertNotification(
+                    context = this,
+                    symbol = coin.symbol,
+                    alertType = coin.alertType,
+                    priceFormatted = priceStr,
+                    changeFormatted = changeStr
+                )
+
+                if (triggered) {
+                    showOnScreenAlert(coin)
+                    break // Show the most significant alert popup at a time
+                }
+            }
+        }
+    }
+
     private fun startLiveRefreshLoop() {
         refreshJob?.cancel()
         refreshJob = lifecycleScope.launch {
             while (isActive) {
                 delay(6000) // update live ticker prices every 6 seconds
                 try {
-                    val freshCoins = BinanceFeedEngine.fetchMarketTickers()
+                    val freshCoins = BybitFeedEngine.fetchMarketTickers()
                     if (freshCoins.isNotEmpty()) {
                         // Update in-place to avoid disruptive scrolling
                         val freshMap = freshCoins.associateBy { it.symbol }
@@ -368,6 +557,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         coinsAdapter.notifyDataSetChanged()
+                        checkForActiveAlerts(freshCoins)
                     }
                 } catch (e: Exception) {
                     // Ignore transient errors
@@ -379,5 +569,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         refreshJob?.cancel()
+        popupDismissJob?.cancel()
     }
 }

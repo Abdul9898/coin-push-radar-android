@@ -1,22 +1,20 @@
 package com.coinpush.radar.adapter
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.coinpush.radar.R
 import com.coinpush.radar.databinding.ItemMoverRowBinding
-import com.coinpush.radar.engine.BinanceFeedEngine
+import com.coinpush.radar.engine.BybitFeedEngine
 import com.coinpush.radar.model.MoverItem
 import java.util.Locale
 
 class MoversAdapter(
     private val context: Context,
-    private var movers: MutableList<MoverItem>
+    private var movers: MutableList<MoverItem>,
+    private val onMoverClick: (MoverItem) -> Unit
 ) : RecyclerView.Adapter<MoversAdapter.MoverViewHolder>() {
 
     fun updateList(newList: List<MoverItem>) {
@@ -46,8 +44,8 @@ class MoversAdapter(
         fun bind(item: MoverItem) {
             binding.tvRank.text = item.rank.toString()
             binding.tvSymbol.text = "${item.symbol} / ${item.name}"
-            binding.tvVolume.text = "Vol $${BinanceFeedEngine.formatAmount(item.quoteVolume)}"
-            binding.tvPrice.text = "$${BinanceFeedEngine.formatPrice(item.price)}"
+            binding.tvVolume.text = "Vol $${BybitFeedEngine.formatAmount(item.quoteVolume)}"
+            binding.tvPrice.text = "$${BybitFeedEngine.formatPrice(item.price)}"
 
             val isPositive = item.priceChangePercent >= 0.0
             val prefix = if (isPositive) "+" else ""
@@ -61,14 +59,9 @@ class MoversAdapter(
                 binding.tvChange.setBackgroundResource(R.drawable.bg_pill_red)
             }
 
+            // In-app inspection only — zero external redirects!
             binding.root.setOnClickListener {
-                try {
-                    val url = "https://www.binance.com/en/trade/${item.symbol}_USDT"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "${item.symbol}: ${item.priceChangePercent}%", Toast.LENGTH_SHORT).show()
-                }
+                onMoverClick(item)
             }
         }
     }
