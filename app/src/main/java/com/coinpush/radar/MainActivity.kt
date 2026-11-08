@@ -173,6 +173,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showOnScreenAlert(coin: CoinPushItem) {
         runOnUiThread {
+            binding.cardAlertPopup.bringToFront()
+            binding.cardAlertPopup.elevation = 40f
+            binding.cardAlertPopup.translationZ = 40f
             binding.tvPopupTitle.text = "🚀 ${coin.baseAsset} ${coin.alertType}"
             val priceStr = BybitFeedEngine.formatPrice(coin.price)
             val prefix = if (coin.priceChangePercent >= 0) "+" else ""
@@ -290,7 +293,20 @@ class MainActivity : AppCompatActivity() {
     private fun setupSettingsControls() {
         // Test Alert Notification button
         binding.btnTestNotification.setOnClickListener {
-            requestNotificationPermission()
+            if (!AlertNotificationManager.areNotificationsEnabled(this)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    requestNotificationPermission()
+                } else {
+                    try {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                        }
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }
+            }
 
             val testCoin = allCoinsList.firstOrNull { it.alertType.isNotEmpty() }
                 ?: CoinPushItem(
@@ -299,7 +315,7 @@ class MainActivity : AppCompatActivity() {
                     name = "Pepe",
                     price = 0.0000213,
                     priceChangePercent = 8.45,
-                    alertType = "Going up!"
+                    alertType = "Breaks up!"
                 )
 
             val priceStr = BybitFeedEngine.formatPrice(testCoin.price)
@@ -320,11 +336,30 @@ class MainActivity : AppCompatActivity() {
             showOnScreenAlert(testCoin)
 
             val feedback = if (posted) {
-                "🔔 Alert notification popped on screen & status bar!"
+                "🔔 Breakout alert popped on screen and notification bar!"
             } else {
-                "Alert popup shown! (Enable notifications in system settings if status bar icon is hidden)"
+                "Alert popup shown! Turn on Notifications in Android settings for status bar alerts."
             }
             Toast.makeText(this, feedback, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_NOTIF_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "🔔 Breakout alert notifications enabled!", Toast.LENGTH_SHORT).show()
+                val sample = allCoinsList.firstOrNull { it.alertType.isNotEmpty() }
+                if (sample != null) {
+                    showOnScreenAlert(sample)
+                }
+            } else {
+                Toast.makeText(this, "⚠️ Notifications blocked. In-app popups will still appear.", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -508,10 +543,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var lastScreenPopupTime = 0L
+
+    private fun getAlertWeight(alertType: String): Int {
+        return when (alertType) {
+            "Breaks up!" -> 4
+            "Breaks down!" -> 3
+            "Imminent movement!" -> 2
+            "Going up!" -> 1
+            else -> 0
+        }
+    }
+
     private fun checkForActiveAlerts(coins: List<CoinPushItem>) {
         val subsPrefs = getSharedPreferences("coin_push_subs", Context.MODE_PRIVATE)
-        val alertCoins = coins.filter { it.alertType.isNotEmpty() }
+        val alertCoins = coins
+            .filter { it.alertType.isNotEmpty() }
+            .sortedWith(
+                compareByDescending<CoinPushItem> { getAlertWeight(it.alertType) }
+                    .thenByDescending { it.quoteVolume }
+            )
 
+        val now = System.currentTimeMillis()
         for (coin in alertCoins) {
             val isSubscribed = subsPrefs.getBoolean("sub_${coin.symbol}", isAllAlertsActive)
             if (isSubscribed) {
@@ -529,7 +582,10 @@ class MainActivity : AppCompatActivity() {
                 )
 
                 if (triggered) {
-                    showOnScreenAlert(coin)
+                    if (now - lastScreenPopupTime >= 12_000L) {
+                        lastScreenPopupTime = now
+                        showOnScreenAlert(coin)
+                    }
                     break // Show the most significant alert popup at a time
                 }
             }

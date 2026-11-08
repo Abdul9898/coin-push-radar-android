@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object AlertNotificationManager {
 
-    const val CHANNEL_ID = "coin_push_breakout_alerts"
+    const val CHANNEL_ID = "coin_push_breakout_alerts_v2"
     private const val CHANNEL_NAME = "Coin Push Breakout Alerts"
     private val lastAlertTime = ConcurrentHashMap<String, Long>()
     private const val ALERT_COOLDOWN_MS = 180_000L // 3 minutes per coin cooldown
@@ -39,7 +39,7 @@ object AlertNotificationManager {
                 description = "Real-time crypto breakout and momentum alert notifications"
                 enableLights(true)
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 250, 150, 250)
+                vibrationPattern = longArrayOf(0, 300, 150, 300)
                 setSound(soundUri, audioAttributes)
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
@@ -47,6 +47,10 @@ object AlertNotificationManager {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    fun areNotificationsEnabled(context: Context): Boolean {
+        return NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
     fun triggerAlertNotification(
@@ -71,9 +75,9 @@ object AlertNotificationManager {
             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             if (vibrator != null && vibrator.hasVibrator()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 180, 100, 200), -1))
+                    vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 250), -1))
                 } else {
-                    vibrator.vibrate(longArrayOf(0, 180, 100, 200), -1)
+                    vibrator.vibrate(longArrayOf(0, 200, 100, 250), -1)
                 }
             }
         } catch (e: Exception) {
@@ -94,26 +98,37 @@ object AlertNotificationManager {
         )
 
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val icon = when (alertType) {
-            "Breaks up!" -> R.drawable.break_up_mini
-            "Going up!" -> R.drawable.going_up_mini
-            "Imminent movement!" -> R.drawable.squeeze_mini
-            "Breaks down!" -> R.drawable.break_down_mini
-            else -> R.drawable.going_up_mini
+        val badgeRes = when (alertType) {
+            "Breaks up!" -> R.drawable.break_up
+            "Going up!" -> R.drawable.going_up
+            "Imminent movement!" -> R.drawable.squeeze
+            "Breaks down!" -> R.drawable.break_down
+            else -> R.drawable.going_up
+        }
+
+        val largeIcon = try {
+            android.graphics.BitmapFactory.decodeResource(context.resources, badgeRes)
+        } catch (e: Exception) {
+            null
         }
 
         val title = "🚀 $symbol $alertType"
         val body = "Price: $$priceFormatted • 24h Change: $changeFormatted • Bybit Linear Perpetual"
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(icon)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .apply {
+                if (largeIcon != null) setLargeIcon(largeIcon)
+            }
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText("$body\nTap to inspect live candlestick chart inside app."))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setSound(soundUri)
-            .setVibrate(longArrayOf(0, 250, 150, 250))
+            .setVibrate(longArrayOf(0, 300, 150, 300))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 
