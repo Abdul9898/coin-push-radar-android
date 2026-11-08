@@ -26,10 +26,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
+          gradle-version: '8.5'
           cache-disabled: true
-
-      - name: Make Gradlew Executable
-        run: chmod +x ./gradlew
 
       - name: Setup Signing Keystore
         run: |
@@ -47,7 +45,7 @@ jobs:
           fi
 
       - name: Build Release APK with Gradle
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Rename APK
         run: |
