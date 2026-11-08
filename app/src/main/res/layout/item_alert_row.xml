@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/black"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="12dp">
+
+    <!-- Alert Indicator Icon -->
+    <ImageView
+        android:id="@+id/alert_img"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:contentDescription="Alert Icon"
+        android:src="@drawable/going_up"
+        app:layout_constraintBottom_toTopOf="@id/divider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Coin Symbol -->
+    <TextView
+        android:id="@+id/symbol_title_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="BTCUSDT"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/alert_img"
+        app:layout_constraintTop_toTopOf="@id/alert_img" />
+
+    <!-- Alert Type (e.g. Going up!, Breaks up!) -->
+    <TextView
+        android:id="@+id/alert_type_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_pill_gold"
+        android:fontFamily="sans-serif-medium"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:text="Going up!"
+        android:textColor="@color/title_color"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/symbol_title_txt"
+        app:layout_constraintStart_toEndOf="@id/symbol_title_txt"
+        app:layout_constraintTop_toTopOf="@id/symbol_title_txt" />
+
+    <!-- Details / Candle Info -->
+    <TextView
+        android:id="@+id/fifteen_min_txt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif"
+        android:maxLines="1"
+        android:text="15-min candle breakout • Surge +3.8%"
+        android:textColor="@color/passive_gray"
+        android:textSize="11sp"
+        app:layout_constraintEnd_toStartOf="@id/alert_price_txt"
+        app:layout_constraintStart_toEndOf="@id/alert_img"
+        app:layout_constraintTop_toBottomOf="@id/symbol_title_txt" />
+
+    <!-- Price at Alert -->
+    <TextView
+        android:id="@+id/alert_price_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="end"
+        android:text="$75,930"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/symbol_title_txt" />
+
+    <!-- Time of Alert -->
+    <TextView
+        android:id="@+id/alert_time_txt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="sans-serif"
+        android:gravity="end"
+        android:text="Just now"
+        android:textColor="@color/passive_gray"
+        android:textSize="11sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/alert_price_txt" />
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:background="@color/line_color"
+        app:layout_constraintTop_toBottomOf="@id/fifteen_min_txt" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

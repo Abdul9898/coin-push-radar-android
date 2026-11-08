@@ -1,0 +1,75 @@
+name: Build Coin Push Radar APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Setup Signing Keystore
+        run: |
+          mkdir -p keystore
+          if [ ! -f keystore/release.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore keystore/release.keystore \
+              -alias coinpush \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass coinpush \
+              -keypass coinpush \
+              -dname "CN=CoinPush,OU=Trading,O=CoinPushRadar,C=US"
+          fi
+
+      - name: Build Release APK with Gradle
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/release/app-release.apk output/CoinPushRadar.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoinPushRadar-APK
+          path: output/CoinPushRadar.apk
+
+      - name: Create Release & Attach APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.9.7
+          name: Coin Push Radar v1.9.7
+          body: |
+            ### 🚀 Coin Push Radar v1.9.7 (Unrestricted Full Rebuild)
+            - **Activate All Alerts 🔓:** Follow unlimited coins with the global Activate All switch fully unlocked (3-coin paywall removed).
+            - **Live Real-Time Charts:** Expandable 1-second candles and multi-timeframe charts (1s, 1m, 5m, 15m, 1h, 4h, 1d) with zero subscriptions.
+            - **Breakout & Momentum Alerts:** Real-time push stream for Going Up, Break Up, and Imminent Movement signals.
+            - **5 Complete Tabs:** Coins, Movers (Gainers & Losers), News, Alerts, and Settings.
+            - **Dark Mode & No Ads:** High performance dark OLED theme without advertisements.
+          files: output/CoinPushRadar.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/symbol_row_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/black">
+
+    <!-- Header / Collapsed Row View -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_header"
+        android:layout_width="match_parent"
+        android:layout_height="62dp"
+        android:paddingHorizontal="12dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Coin Symbol (e.g. BTC) -->
+        <TextView
+            android:id="@+id/symbol_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="BTC"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Coin Name (e.g. Bitcoin) -->
+        <TextView
+            android:id="@+id/symbol_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:text="Bitcoin"
+            android:textColor="@color/passive_gray"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/symbol_title" />
+
+        <!-- Price (e.g. 75,930.00) -->
+        <TextView
+            android:id="@+id/price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="end"
+            android:text="75,930.00"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/percent_up"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- 24h Daily % Change (e.g. +3.45%) -->
+        <TextView
+            android:id="@+id/percent_up"
+            android:layout_width="72dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_pill_green"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingHorizontal="6dp"
+            android:text="+3.45%"
+            android:textColor="@color/up_text_color"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/latest_alert"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Latest Alert Indicator Icon -->
+        <ImageView
+            android:id="@+id/latest_alert"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Alert Badge"
+            android:src="@drawable/going_up_mini"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/switch_push"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Push Alert Toggle Checkbox (Unrestricted!) -->
+        <ImageView
+            android:id="@+id/switch_push"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="Toggle Alert"
+            android:src="@drawable/checked"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Expandable Chart View Container -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_webview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#07090C"
+        android:paddingBottom="12dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cl_header">
+
+        <!-- Interval Selector Tabs -->
+        <LinearLayout
+            android:id="@+id/ll_interval"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:background="#0D1118"
+            android:orientation="horizontal"
+            android:weightSum="7"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tv_interval_1s"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="1s"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_interval_1m"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="1m"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_interval_5m"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="5m"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_interval_15m"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="15m"
+                android:textColor="@color/gold_accent"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_interval_1h"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="1h"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_interval_4h"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="4h"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_interval_1d"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="1d"
+                android:textColor="@color/passive_gray"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Live Candlestick WebView Chart -->
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="@color/black"
+            app:layout_constraintTop_toBottomOf="@id/ll_interval" />
+
+        <!-- Bottom Chart Info & Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            app:layout_constraintTop_toBottomOf="@id/webView">
+
+            <TextView
+                android:id="@+id/tv_chart_signal_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:text="⚡ Real-time Candlesticks • 1s/1m/15m/1h"
+                android:textColor="@color/passive_gray"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/btn_trade_binance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill_gold"
+                android:fontFamily="sans-serif-medium"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="Trade on Binance"
+                android:textColor="@color/title_color"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Subtle Divider Line -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/line_color"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

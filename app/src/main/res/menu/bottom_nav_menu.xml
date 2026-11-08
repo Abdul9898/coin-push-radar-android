@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_allSymbols"
+        android:icon="@drawable/tabs_all_symbols"
+        android:title="@string/coins" />
+    <item
+        android:id="@+id/navigation_gainers"
+        android:icon="@drawable/tabs_gainers"
+        android:title="@string/movers" />
+    <item
+        android:id="@+id/navigation_news"
+        android:icon="@drawable/tabs_news"
+        android:title="@string/news" />
+    <item
+        android:id="@+id/navigation_latestAlerts"
+        android:icon="@drawable/tabs_latest_alerts"
+        android:title="@string/alerts" />
+    <item
+        android:id="@+id/navigation_users"
+        android:icon="@drawable/tabs_user"
+        android:title="@string/settings" />
+</menu>
